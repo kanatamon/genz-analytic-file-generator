@@ -1,0 +1,14 @@
+venv/
+
+__pycache__/
+
+.vscode/
+
+.devcontainer/
+
+.gitignore
+.env.exmaple
+
+Dockerfile
+Dockerfile.dev
+README.md

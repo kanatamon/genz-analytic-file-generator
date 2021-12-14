@@ -4,6 +4,7 @@
 
 from app import app
 from dotenv import load_dotenv
+import os
 
 # NOTE: This is only for development when running container locally on your machine.
 # Notice that dotenv won't override the existing ENV. So, it's safe to rest it here,
@@ -12,4 +13,4 @@ load_dotenv()
 
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=80)
+    app.run(host='0.0.0.0', port=os.getenv('LISTEN_PORT'))
