@@ -62,7 +62,16 @@ class AnalyticFileGen:
             if df is not None:
                 dfs.append(df)
 
+        # Concat each question as column and expand horizontally
         report_df = pd.concat(dfs, axis=1)
+
+        # Add a col of group
+        groups_df = get_groups_from_answers(answers_df)
+        report_df = add_a_multi_idx_col_to_origin(
+            origin_df=report_df,
+            source_df=groups_df,
+            new_col_name='กลุ่ม',
+        )
 
         # Fill-na only numberic columns
         numeric_cols = report_df.select_dtypes(include=['number']).columns
@@ -280,6 +289,12 @@ def write_xlsx_with_auto_adjust_width(sheet_name: str, df: pd.DataFrame):
         'align': 'center',
         'valign': 'top',
     })
+    vertical_header_format = workbook.add_format({
+        'bold': True,
+        'border': 1,
+        'align': 'center',
+        'valign': 'vcenter',
+    })
     choice_description_format = workbook.add_format({
         'text_wrap': True,
         'indent': 1,
@@ -330,9 +345,33 @@ def write_xlsx_with_auto_adjust_width(sheet_name: str, df: pd.DataFrame):
             worksheet.merge_range(0, first_col_idx, 0,
                                   col_idx, column[0], header_format)
 
+        # Check if column names of all index 0 - 2 vertically are same
+        # then merge cells with vertical header style
+        if column[0] == column[1] == column[2]:
+            worksheet.merge_range(0, col_idx, 2, col_idx,
+                                  column[0], vertical_header_format)
+
     writer.close()
 
     # go back to the beginning of the stream
     output.seek(0)
 
     return output
+
+
+def get_groups_from_answers(from_df: pd.DataFrame):
+    from_df = from_df.copy()
+
+    group_idx = 'response_code'
+    group_cols = ['response_code', 'answer_group']
+
+    groups_df = from_df[group_cols].drop_duplicates(
+    ).set_index(group_idx)
+
+    return groups_df
+
+
+def add_a_multi_idx_col_to_origin(origin_df: pd.DataFrame, source_df: pd.DataFrame, new_col_name: str):
+    multi_idx_cols = [(new_col_name, new_col_name, new_col_name)]
+    source_df.columns = pd.MultiIndex.from_tuples(multi_idx_cols)
+    return pd.merge(source_df, origin_df, on="response_code", how="left")
