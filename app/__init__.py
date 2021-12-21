@@ -1,8 +1,8 @@
-from flask import Flask, send_file
+from flask import Flask, send_file, Response
 from sqlalchemy import create_engine
 import pandas as pd
 import numpy as np
-from io import BytesIO
+from io import BytesIO, StringIO
 import os
 from urllib.parse import quote
 
@@ -13,7 +13,7 @@ HORIZONTAL_PADDING = 6
 app = Flask(__name__)
 
 
-@app.route('/')
+@app.route('/xlsx')
 def get_analytic_xlsx_file():
     analyzer = AnalyticFileGen(
         host=os.getenv('DB_HOST'),
@@ -28,6 +28,25 @@ def get_analytic_xlsx_file():
         output,
         attachment_filename='gen_z_questionnaire_data.xlsx',
         as_attachment=True,
+    )
+
+
+@app.route('/csv')
+def get_analytic_csv_file():
+    analyzer = AnalyticFileGen(
+        host=os.getenv('DB_HOST'),
+        username=os.getenv('DB_USER'),
+        password=os.getenv('DB_PASS'),
+        db=os.getenv('DB_NAME'),
+    )
+    csv = analyzer.export_csv()
+    analyzer.dispose()
+
+    return Response(
+        csv,
+        mimetype="text/csv",
+        headers={"Content-disposition":
+                 "attachment; filename=gen_z_questionnaire_data.csv"}
     )
 
 
@@ -50,6 +69,15 @@ class AnalyticFileGen:
         output = write_xlsx_with_auto_adjust_width(
             sheet_name='data', df=report_df)
         return output
+
+    def export_csv(self):
+        report_df = self.__get_analytic_report()
+        buffer = StringIO()
+        report_df.to_csv(buffer)
+        # Encoding with utf-8-sig for readability in Thai language on MS Excel
+        # -with default decoding utf-8.
+        buffer_str = buffer.getvalue().encode('utf-8-sig')
+        return buffer_str
 
     def __get_analytic_report(self):
         answers_df = self.__get_answers()
