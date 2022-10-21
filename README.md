@@ -99,3 +99,7 @@ git push dokku main:master
 
 # Running on http://172.16.0.6:4321/
 ```
+
+## Related Repository
+
+- [Gen Z Questionnire App](https://github.com/kanatamon/genz-questionnaire)
